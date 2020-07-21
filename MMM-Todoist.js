@@ -8,25 +8,6 @@
  * MIT Licensed.
  */
 
-/*
- * Update by mabahj 24/11/2019
- * - Added support for labels in addtion to projects
- * Update by AgP42 the 18/07/2018
- * Modification added :
- * - Management of a PIR sensor with the module MMM-PIR-Sensor (by PaViRo). In case PIR module detect no user,
- * the update of the ToDoIst is stopped and will be requested again at the return of the user
- * - Management of the "module.hidden" by the core system : same behaviour as "User_Presence" by the PIR sensor
- * - Add "Loading..." display when the infos are not yet loaded from the server
- * - Possibility to add the last update time from server at the end of the module.
- * This can be configured using "displayLastUpdate" and "displayLastUpdateFormat"
- * - Possibility to display long task on several lines(using the code from default module "calendar".
- * This can be configured using "wrapEvents" and "maxTitleLength"
- *
- * // Update 27/07/2018 :
- * - Correction of start-up update bug
- * - correction of regression on commit #28 for tasks without dueDate
- * */
-
 //UserPresence Management (PIR sensor)
 var UserPresence = true; //true by default, so no impact for user without a PIR sensor
 
@@ -36,12 +17,11 @@ Module.register("MMM-Todoist", {
 		maximumEntries: 10,
 		projects: [],
 		blacklistProjects: false,
-	    	labels: [""],
+        labels: [""],
 		updateInterval: 10 * 60 * 1000, // every 10 minutes,
 		fade: true,
 		fadePoint: 0.25,
 		sortType: "todoist",
-
 		//New config from AgP42
 		displayLastUpdate: false, //add or not a line after the tasks with the last server update time
 		displayLastUpdateFormat: "dd - HH:mm:ss", //format to display the last update. See Moment.js documentation for all display possibilities
@@ -49,16 +29,10 @@ Module.register("MMM-Todoist", {
 		wrapEvents: false, // wrap events to multiple lines breaking at maxTitleLength
 		displayTasksWithoutDue: true, // Set to false to not print tasks without a due date
 		displayTasksWithinDays: -1, // If >= 0, do not print tasks with a due date more than this number of days into the future (e.g., 0 prints today and overdue)
-		// 2019-12-31 by thyed
 		displaySubtasks: true, // set to false to exclude subtasks
 		displayAvatar: false,
 		showProject: true,
-		// projectColors: ["#95ef63", "#ff8581", "#ffc471", "#f9ec75", "#a8c8e4", "#d2b8a3", "#e2a8e4", "#cccccc", "#fb886e",
-		// 	"#ffcc00", "#74e8d3", "#3bd5fb", "#dc4fad", "#ac193d", "#d24726", "#82ba00", "#03b3b2", "#008299",
-		// 	"#5db2ff", "#0072c6", "#000000", "#777777"
-		// ], //These colors come from Todoist and their order matters if you want the colors to match your Todoist project colors.
-		
-		//TODOIST Change how they are doing Project Colors, so now I'm changing it.
+        hideProjectName: false, // set to true to show only the project color (has no effect if showProject is false)
 		projectColors: {
 			30:'#b8256f',
 			31:'#db4035',
@@ -86,9 +60,7 @@ Module.register("MMM-Todoist", {
 		apiVersion: "v8",
 		apiBase: "https://todoist.com/API",
 		todoistEndpoint: "sync",
-
 		todoistResourceType: "[\"items\", \"projects\", \"collaborators\", \"user\", \"labels\"]",
-
 		debug: false
 	},
 
@@ -175,7 +147,7 @@ Module.register("MMM-Todoist", {
 			}
 
 		} else { //if (UserPresence = false OR ModuleHidden = true)
-			Log.log("Personne regarde : on stop l'update " + this.name + " projet : " + this.config.projects);
+			Log.log("No one is watching, stop updating : " + this.name + " project : " + this.config.projects);
 			clearInterval(this.updateIntervalID); // stop the update interval of this module
 			this.updateIntervalID = 0; //reset the flag to be able to start another one at resume
 		}
@@ -454,7 +426,7 @@ Module.register("MMM-Todoist", {
 		return this.createCell("spacerCell", "&nbsp;");
 	},
 	addTodoTextCell: function(item) {
-		return this.createCell("title bright alignLeft", 
+		return this.createCell("title bright alignLeft",
 			this.shorten(item.content, this.config.maxTitleLength, this.config.wrapEvents));
 
 		// return this.createCell("title bright alignLeft", item.content);
@@ -462,7 +434,7 @@ Module.register("MMM-Todoist", {
 	addDueDateCell: function(item) {
 		var className = "bright align-right dueDate ";
 		var innerHTML = "";
-		
+
 		var oneDay = 24 * 60 * 60 * 1000;
 		var dueDateTime = this.parseDueDate(item.due.date);
 		var dueDate = new Date(dueDateTime.getFullYear(), dueDateTime.getMonth(), dueDateTime.getDate());
@@ -529,10 +501,11 @@ Module.register("MMM-Todoist", {
 	addProjectCell: function(item) {
 		var project = this.tasks.projects.find(p => p.id === item.project_id);
 		var projectcolor = this.config.projectColors[project.color];
-		var innerHTML = "<span class='projectcolor' style='color: " + projectcolor + "; background-color: " + projectcolor + "'></span>" + project.name;
+        var projectDisplayName = this.config.hideProjectName ? "" : project.name;
+		var innerHTML = "<span class='projectcolor' style='color: " + projectcolor + "; background-color: " + projectcolor + "'></span>" + projectDisplayName;
 		return this.createCell("xsmall", innerHTML);
 	},
-	addAssigneeAvatorCell: function(item, collaboratorsMap) {	
+	addAssigneeAvatorCell: function(item, collaboratorsMap) {
 		var avatarImg = document.createElement("img");
 		avatarImg.className = "todoAvatarImg";
 
@@ -547,11 +520,11 @@ Module.register("MMM-Todoist", {
 		return cell;
 	},
 	getDom: function () {
-	
+
 		if (this.config.hideWhenEmpty && this.tasks.items.length===0) {
 			return null;
 		}
-	
+
 		//Add a new div to be able to display the update time alone after all the task
 		var wrapper = document.createElement("div");
 
@@ -562,14 +535,13 @@ Module.register("MMM-Todoist", {
 			return wrapper;
 		}
 
-
 		//New CSS based Table
 		var divTable = document.createElement("div");
 		divTable.className = "divTable normal small light";
 
 		var divBody = document.createElement("div");
 		divBody.className = "divTableBody";
-		
+
 		if (this.tasks === undefined) {
 			return wrapper;
 		}
@@ -586,7 +558,7 @@ Module.register("MMM-Todoist", {
 			var divRow = document.createElement("div");
 			//Add the Row
 			divRow.className = "divTableRow";
-			
+
 
 			//Columns
 			divRow.appendChild(this.addPriorityIndicatorCell(item));
@@ -603,10 +575,9 @@ Module.register("MMM-Todoist", {
 
 			divBody.appendChild(divRow);
 		});
-		
+
 		divTable.appendChild(divBody);
 		wrapper.appendChild(divTable);
-
 
 		// display the update time at the end, if defined so by the user config
 		if (this.config.displayLastUpdate) {
