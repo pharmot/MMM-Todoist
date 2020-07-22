@@ -33,6 +33,7 @@ Module.register("MMM-Todoist", {
 		displayAvatar: false,
 		showProject: true,
         hideProjectName: false, // set to true to show only the project color (has no effect if showProject is false)
+        showLabel: true,
 		projectColors: {
 			30:'#b8256f',
 			31:'#db4035',
@@ -505,6 +506,21 @@ Module.register("MMM-Todoist", {
 		var innerHTML = "<span class='projectcolor' style='color: " + projectcolor + "; background-color: " + projectcolor + "'></span>" + projectDisplayName;
 		return this.createCell("xsmall", innerHTML);
 	},
+    addLabelCell: function(item) {
+        var innerHTML = "";
+        var itemLabels = item.labels;
+        if( itemLabels.length === 0 ) {
+            return this.createCell("xsmall labelCell", "");
+        }
+        itemLabels.forEach(itemlabel => {
+            let labelObject = this.tasks.labels.find(p => p.id === itemlabel );
+            let labelcolor = this.config.projectColors[labelObject.color];
+            let labelDisplayName = this.config.hideLabelName ? "&nbsp;" : labelObject.name;
+            innerHTML += `<span class='label' style='color: ${labelcolor};'>${labelDisplayName}</span>`;
+        });
+        var cell = this.createCell("xsmall labelCell", innerHTML)
+		return cell;
+	},
 	addAssigneeAvatorCell: function(item, collaboratorsMap) {
 		var avatarImg = document.createElement("img");
 		avatarImg.className = "todoAvatarImg";
@@ -569,6 +585,10 @@ Module.register("MMM-Todoist", {
 				divRow.appendChild(this.addColumnSpacerCell());
 				divRow.appendChild(this.addProjectCell(item));
 			}
+            if (this.config.showLabel) {
+                divRow.appendChild(this.addColumnSpacerCell());
+                divRow.appendChild(this.addLabelCell(item));
+            }
 			if (this.config.displayAvatar) {
 				divRow.appendChild(this.addAssigneeAvatorCell(item, collaboratorsMap));
 			}
