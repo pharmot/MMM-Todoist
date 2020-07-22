@@ -62,7 +62,7 @@ Module.register("MMM-Todoist", {
 		apiBase: "https://api.todoist.com/sync",      //Changed from https://todoist.com/API
 		todoistEndpoint: "sync",
 		todoistResourceType: '["items", "projects", "collaborators", "user", "labels"]',
-		debug: true
+		debug: false
 	},
 
 	// Define required scripts.
@@ -432,7 +432,7 @@ Module.register("MMM-Todoist", {
         let innerHTML = this.shorten(item.content, this.config.maxTitleLength, this.config.wrapEvents);
 
         if( this.config.showLabel && item.labels.length > 0 ) {
-            innerHTML += addLabelSpans(item);
+            innerHTML += this.addLabelSpans(item);
         }
 
         let cell = this.createCell("title bright alignLeft", innerHTML)
@@ -588,10 +588,6 @@ Module.register("MMM-Todoist", {
 				divRow.appendChild(this.addColumnSpacerCell());
 				divRow.appendChild(this.addProjectCell(item));
 			}
-            if (this.config.showLabel) {
-                divRow.appendChild(this.addColumnSpacerCell());
-                divRow.appendChild(this.addLabelCell(item));
-            }
 			if (this.config.displayAvatar) {
 				divRow.appendChild(this.addAssigneeAvatorCell(item, collaboratorsMap));
 			}
