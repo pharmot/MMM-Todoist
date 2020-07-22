@@ -48,6 +48,7 @@
 
 .MMM-Todoist .label {
   font-size: 0.75em;
+  padding-left: 3px;
 }
 
 /* .MMM-Todoist .dueDate {

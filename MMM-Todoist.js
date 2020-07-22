@@ -59,10 +59,10 @@ Module.register("MMM-Todoist", {
 
 		//This has been designed to use the Todoist Sync API.
 		apiVersion: "v8",
-		apiBase: "https://todoist.com/API",
+		apiBase: "https://api.todoist.com/sync",      //Changed from https://todoist.com/API
 		todoistEndpoint: "sync",
-		todoistResourceType: "[\"items\", \"projects\", \"collaborators\", \"user\", \"labels\"]",
-		debug: false
+		todoistResourceType: '["items", "projects", "collaborators", "user", "labels"]',
+		debug: true
 	},
 
 	// Define required scripts.
@@ -356,7 +356,8 @@ Module.register("MMM-Todoist", {
 		this.tasks = {
 			"items": items,
 			"projects": tasks.projects,
-			"collaborators": tasks.collaborators
+			"collaborators": tasks.collaborators,
+            "labels": tasks.labels
 		};
 
 	},
@@ -427,10 +428,16 @@ Module.register("MMM-Todoist", {
 		return this.createCell("spacerCell", "&nbsp;");
 	},
 	addTodoTextCell: function(item) {
-		return this.createCell("title bright alignLeft",
-			this.shorten(item.content, this.config.maxTitleLength, this.config.wrapEvents));
 
-		// return this.createCell("title bright alignLeft", item.content);
+        let innerHTML = this.shorten(item.content, this.config.maxTitleLength, this.config.wrapEvents);
+
+        if( this.config.showLabel && item.labels.length > 0 ) {
+            innerHTML += addLabelSpans(item);
+        }
+
+        let cell = this.createCell("title bright alignLeft", innerHTML)
+		return cell;
+
 	},
 	addDueDateCell: function(item) {
 		var className = "bright align-right dueDate ";
@@ -506,20 +513,16 @@ Module.register("MMM-Todoist", {
 		var innerHTML = "<span class='projectcolor' style='color: " + projectcolor + "; background-color: " + projectcolor + "'></span>" + projectDisplayName;
 		return this.createCell("xsmall", innerHTML);
 	},
-    addLabelCell: function(item) {
+    addLabelSpans: function(item) {
         var innerHTML = "";
         var itemLabels = item.labels;
-        if( itemLabels.length === 0 ) {
-            return this.createCell("xsmall labelCell", "");
-        }
-        itemLabels.forEach(itemlabel => {
+        itemLabels.forEach( itemlabel => {
             let labelObject = this.tasks.labels.find(p => p.id === itemlabel );
             let labelcolor = this.config.projectColors[labelObject.color];
             let labelDisplayName = this.config.hideLabelName ? "&nbsp;" : labelObject.name;
-            innerHTML += `<span class='label' style='color: ${labelcolor};'>${labelDisplayName}</span>`;
+            innerHTML += `<span class='label' style='color: ${labelcolor};'>@${labelDisplayName}</span>`;
         });
-        var cell = this.createCell("xsmall labelCell", innerHTML)
-		return cell;
+		return innerHTML;
 	},
 	addAssigneeAvatorCell: function(item, collaboratorsMap) {
 		var avatarImg = document.createElement("img");
